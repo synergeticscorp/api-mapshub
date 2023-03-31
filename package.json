@@ -1,0 +1,22 @@
+{
+  "name": "api-mapshub",
+  "version": "1.0.0",
+  "description": "mapshub API",
+  "main": "server.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/synergeticscorp/api-mapshub.git"
+  },
+  "keywords": [
+    "API"
+  ],
+  "author": "AF",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/synergeticscorp/api-mapshub/issues"
+  },
+  "homepage": "https://github.com/synergeticscorp/api-mapshub#readme"
+}
