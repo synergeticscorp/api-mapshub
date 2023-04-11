@@ -1,0 +1,428 @@
+openapi: 3.0.1
+info:
+  title: MapsHub Open API Specification (DRAFT)
+  description: MapsHub Open API Specification (Work in progress)
+  version: 0.0.1
+servers:
+  - url: 'https'
+paths:
+  "/v1/sensors/{clientId}/devices":
+    get:
+      description: Get a list of available devices for a client id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/getDeviceInformationForAll"
+          description: OK
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/unauthorizedRequestResponse"
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/forbiddenResponse"
+          description: Forbidden
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/serverErrorResponse"
+          description: Internal Server Error
+  "/v1/sensors/{clientId}/devices/{deviceId}":
+    get:
+      description: Get device information for a specific device id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/getDeviceInformation"
+          description: OK
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/unauthorizedRequestResponse"
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/forbiddenResponse"
+          description: Forbidden
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/serverErrorResponse"
+          description: Internal Server Error
+  "/v1/sensors/{clientId}/devices/{deviceId}/data":
+    get:
+      description: Get device data for specific device id
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/getDeviceData"
+          description: OK
+        '401':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/unauthorizedRequestResponse"
+          description: Unauthorized
+        '403':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/forbiddenResponse"
+          description: Forbidden
+        '500':
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/serverErrorResponse"
+          description: Internal Server Error
+
+components:
+  parameters:
+    deviceId:
+      description: The unique device ID which identifies each sensor. Can be obtained
+        from the Get All Devices API query.
+      explode: false
+      in: path
+      name: deviceId
+      required: true
+      schema:
+        example: "<device_id>"
+        type: string
+      style: simple
+    startDateTime:
+      description: Timestamp from where onwards the historic data messages should be queried.
+      explode: true
+      in: query
+      name: startDateTime
+      required: false
+      schema:
+        example: '2022-03-07T08:51:29.015Z'
+        type: string
+      style: form
+    endDateTime:
+      description: Timestamp until when the historic data messages should be queried.
+      explode: true
+      in: query
+      name: endDateTime
+      required: false
+      schema:
+        example: '2022-03-07T09:51:29.015Z'
+        type: string
+      style: form
+    interval:
+      description: The interval for which grouping of statistics should occur.
+      explode: true
+      in: query
+      name: interval
+      required: false
+      schema:
+        example: 1d
+        type: string
+      style: form
+    rangeQuery:
+      description: Specify the range in days to receive data about.
+      explode: true
+      in: query
+      name: range
+      required: false
+      schema:
+        default: '1'
+        enum:
+        - '1'
+        - '7'
+        - '30'
+        example: '1'
+        type: string
+      style: form
+
+  responses:
+    BadRequestError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/badRequestResponse"
+      description: Bad Request
+    NotFoundError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/notFoundResponse"
+      description: Not Found Error
+    InternalServerError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/serverErrorResponse"
+      description: Internal Server Error
+    ForbiddenError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/forbiddenResponse"
+      description: Forbidden
+    UnauthorizedError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/unauthorizedRequestResponse"
+      description: Unauthorized
+    UnprocessableEntityError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/unprocessableEntityResponse"
+      description: Unprocessable Entity
+    ConflictError:
+      content:
+        application/json:
+          schema:
+            "$ref": "#/components/schemas/conflictResponse"
+      description: Conflict
+
+  schemas:
+    badRequestResponse:
+      description: An API error response in case of an HTTP Bad Request.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 400
+          type: integer
+        statusText:
+          description: HTTP Status Text
+          enum:
+          - Bad Request
+          type: string
+        errors:
+          description: Detailed error information.
+          items:
+            type: object
+          type: array
+      title: Bad Request
+      type: object
+    notFoundResponse:
+      description: An API error response when a resource is Not Found.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 404
+          type: integer
+        statusText:
+          description: HTTP Status Text
+          enum:
+          - Not Found
+          type: string
+        errors:
+          description: Detailed error information
+          items:
+            type: object
+          type: array
+      title: Not Found
+      type: object
+    serverErrorResponse:
+      description: An API error response in case of a Server Side Error.
+      properties:
+        statusText:
+          description: HTTP Status Text
+          enum:
+          - Unknown Error
+          type: string
+        errors:
+          description: List of errors encountered while calling the API.
+          items:
+            type: object
+          type: array
+      title: Server Error
+      type: object
+    forbiddenResponse:
+      description: An API error response in case of an HTTP Forbidden Request.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 403
+          type: integer
+        statusText:
+          description: HTTP Status Text
+          enum:
+          - Forbidden
+          type: string
+        errors:
+          description: Detailed error information.
+          items:
+            type: object
+          type: array
+      title: Forbidden Request
+      type: object
+    unauthorizedRequestResponse:
+      description: An API error response in case of an HTTP Unauthorized Request.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 401
+          type: integer
+        statusText:
+          description: HTTP Status Text
+          enum:
+          - Unauthorized
+          type: string
+        errors:
+          description: Detailed error information.
+          items:
+            type: object
+          type: array
+      title: Unauthorized Request
+      type: object
+    unprocessableEntityResponse:
+      description: An API error response when the request is valid but cannot be processed.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 422
+          type: integer
+        statusText:
+          description: HTTP Status Text
+          enum:
+          - Unprocessable Entity
+          type: string
+        errors:
+          description: Detailed error information.
+          items:
+            type: object
+          type: array
+      title: Unprocessable Entity
+      type: object
+    conflictResponse:
+      description: An API error response when a conflict is found.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 409
+          type: integer
+        statusText:
+          description: Http Status Text
+          enum:
+          - Conflict
+          type: string
+        errors:
+          description: Detailed error information.
+          items:
+            type: object
+          type: array
+      title: Conflict
+      type: object
+
+    getDeviceInformationForAll:
+      additionalProperties: false
+      description: A list with all devices (for a particular clientId)
+      items:
+        $ref: "#/components/schemas/deviceListObj"
+      type: array
+    getDeviceInformation:
+      allOf:
+        - $ref: "#/components/schemas/deviceInfoObj"
+    getDeviceData:
+      allOf:
+        - $ref: "#/components/schemas/deviceInfoObj"
+        - $ref: "#/components/schemas/deviceDataObj"
+
+    deviceListObj:
+      properties:
+        clientId:
+          description: Unique client id that has ownership over this device (could be project id)
+            Each integration with third party system should have one such unique client id
+          type: string
+          example: 8da1c543-613a-4b36-9c19-6289b3965177
+        deviceId:
+          description: Unique device id used to uniquely identify the device
+          type: string
+          example: ec7ff730-e5ba-483a-9c9d-213a8150ed0e
+        type:
+          $ref: "#/components/schemas/deviceTypeEnum"
+        coordinates:
+          $ref: "#/components/schemas/coordinatesObj"
+    deviceInfoObj:
+      properties:
+        clientId:
+          description: Unique client id that has ownership over this device (could be project id)
+            Each integration with third party system should have one such unique client id
+          example: 8da1c543-613a-4b36-9c19-6289b3965177
+          type: string
+        deviceId:
+          description: Unique device id used to uniquely identify the device
+          example: ec7ff730-e5ba-483a-9c9d-213a8150ed0e
+          type: string
+        name:
+          description: Name of this device
+          type: string
+          example: "<DeviceName>"
+        tag:
+          description: Tag for this device
+          example: "<DeviceTag>"
+          type: string
+        type:
+          $ref: "#/components/schemas/deviceTypeEnum"
+        vendor:
+          description: The vendor for this device
+          type: string
+          example: "BOX2M"
+        model:
+          description: Device model as defined by the vendor
+          type: string
+          example: "M0"
+        coordinates:
+          $ref: "#/components/schemas/coordinatesObj"
+    deviceDataObj:
+      properties:
+        value:
+          description: Value reported by the sensor
+          type: integer
+        unit:
+          $ref: "#/components/schemas/deviceUnitEnum"
+        sampleTime:
+          description: Timestamp recorded for this sample
+          type: string
+          example: '2022-03-07T08:51:29.015Z'
+    coordinatesObj:
+      items:
+        description: Coordinates of the specific position, in the following format [long, lat]
+        type: number
+      type: array
+      maxItems: 2
+      minItems: 2
+      example: [44.426879,26.102448]
+    deviceTypeEnum:
+      description: Device type
+      type: string
+      enum:
+        - FV           # Fluid Velocity
+        - FR           # Fluid Rate
+        - Pressure
+        - Humidity
+        - Temperature
+        - CH4
+        - H2S
+      example: "H2S"
+    deviceUnitEnum:
+      description: Measurement unit for the value reported
+      type: string
+      enum:
+        - kWh
+        - Bar
+        - C
+        - '%'
+        - PPM
+      example: "PPM"
