@@ -224,7 +224,8 @@ paths:
       tags:
         - IoT Gateway
     post:
-      description: Add new device
+      description: Create new record for a new device
+      summary: Add new device
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
       requestBody:
@@ -266,6 +267,7 @@ paths:
         - IoT Gateway
     delete:
       description: Delete a specific device
+      summary: Remove device
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
       responses:
