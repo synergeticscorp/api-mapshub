@@ -1,14 +1,49 @@
 openapi: 3.0.1
 info:
+  version: 0.0.1
   title: MapsHub Open API Specification (DRAFT)
   description: MapsHub Open API Specification (Work in progress)
-  version: 0.0.1
+  contact:
+    email: office@synergetics.ro
+    name: Synergetics Corporation SA
+    url: https://www.synergetics.ro/
 servers:
   - url: 'https'
+tags:
+  - description: 'Liveness, Readiness and Startup Probes 🔧 **Internal Use Only**'
+    name: API health checks
+  - description: Integrate Devices with GIS system
+    name: IoT Integrator
 paths:
+  "/v1/sensors/healthz/live":
+    get:
+      description: 'The liveness endpoint returns the liveness of a microservice. If the check does not return the 
+      expected response, it means that the process is unhealthy or dead and should be replaced as soon as possible.'
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Internal Server Error
+      tags:
+        - API health checks
+  "/v1/sensors/healthz/ready":
+    get:
+      description: 'The readiness endpoint returns the readiness state to accept incoming requests from the gateway 
+      or the upstream proxy. Readiness signals that the app is running normally but isn’t ready to receive requests 
+      just yet. Maybe the database connection is not yet ready, or a big configuration file is being loaded.'
+      responses:
+        '200':
+          description: OK
+        '500':
+          description: Internal Server Error
+      tags:
+        - API health checks
+
   "/v1/sensors/{clientId}/devices":
     get:
-      description: Get a list of available devices for a client id
+      description: Get a list of available devices for a specific client ID
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
       responses:
         '200':
           content:
@@ -34,9 +69,16 @@ paths:
               schema:
                 $ref: "#/components/schemas/serverErrorResponse"
           description: Internal Server Error
+      #security:
+      #summary:
+      tags:
+        - IoT Integrator
   "/v1/sensors/{clientId}/devices/{deviceId}":
     get:
-      description: Get device information for a specific device id
+      description: Get device information for a specific device ID
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+        - $ref: "#/components/parameters/deviceIdParam"
       responses:
         '200':
           content:
@@ -62,9 +104,18 @@ paths:
               schema:
                 $ref: "#/components/schemas/serverErrorResponse"
           description: Internal Server Error
+      #security:
+      #summary:
+      tags:
+        - IoT Integrator
   "/v1/sensors/{clientId}/devices/{deviceId}/data":
     get:
       description: Get device data for specific device id
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+        - $ref: "#/components/parameters/deviceIdParam"
+        - $ref: "#/components/parameters/intervalQueryParam"
+        - $ref: "#/components/parameters/rangeQueryParam"
       responses:
         '200':
           content:
@@ -90,10 +141,25 @@ paths:
               schema:
                 $ref: "#/components/schemas/serverErrorResponse"
           description: Internal Server Error
+      #security:
+      #summary:
+      tags:
+        - IoT Integrator
 
 components:
   parameters:
-    deviceId:
+    clientIdParam:
+      description: The unique client ID which identifies the third party entity that owns these resources. Can be
+        obtained from the Get All Devices API query.
+      explode: false
+      in: path
+      name: clientId
+      required: true
+      schema:
+        example: 8da1c543-613a-4b36-9c19-6289b3965177
+        type: string
+      style: simple
+    deviceIdParam:
       description: The unique device ID which identifies each sensor. Can be obtained
         from the Get All Devices API query.
       explode: false
@@ -101,7 +167,7 @@ components:
       name: deviceId
       required: true
       schema:
-        example: "<device_id>"
+        example: ec7ff730-e5ba-483a-9c9d-213a8150ed0e
         type: string
       style: simple
     startDateTime:
@@ -124,29 +190,35 @@ components:
         example: '2022-03-07T09:51:29.015Z'
         type: string
       style: form
-    interval:
-      description: The interval for which grouping of statistics should occur.
+    intervalQueryParam:
+      description: 'The interval for which grouping of statistics should occur.'
       explode: true
       in: query
       name: interval
       required: false
       schema:
-        example: 1d
+        default: 1h
+        enum:
+          - 1h
+          - 3h
+          - 6h
+          - 12h
+          - 1d
+          - 1w
+          - 1m
         type: string
+        example: 1d
       style: form
-    rangeQuery:
-      description: Specify the range in days to receive data about.
+    rangeQueryParam:
+      description: 'Specify the range in hours (from now looking backwards). The number of samples is controlled by 
+      interval query param.'
       explode: true
       in: query
       name: range
       required: false
       schema:
-        default: '1'
-        enum:
-        - '1'
-        - '7'
-        - '30'
-        example: '1'
+        default: 1
+        example: 1
         type: string
       style: form
 
@@ -335,9 +407,11 @@ components:
       allOf:
         - $ref: "#/components/schemas/deviceInfoObj"
     getDeviceData:
-      allOf:
-        - $ref: "#/components/schemas/deviceInfoObj"
-        - $ref: "#/components/schemas/deviceDataObj"
+      items:
+        allOf:
+          - $ref: "#/components/schemas/deviceInfoObj"
+          - $ref: "#/components/schemas/deviceDataObj"
+      type: array
 
     deviceListObj:
       properties:
