@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  version: 0.0.1
+  version: 0.0.2
   title: MapsHub Open API Specification (DRAFT)
   description: MapsHub Open API Specification (Work in progress)
   contact:
@@ -9,21 +9,159 @@ info:
     url: https://www.synergetics.ro/
 servers:
   - url: 'https'
+  - url: https://dev-piazdvgvgrwwhgn5.us.auth0.com
+  - url: https://sso.infra.virtomat.io
 tags:
-  - description: 'Liveness, Readiness and Startup Probes 🔧 **Internal Use Only**'
-    name: API health checks
-  - description: Integrate Devices with GIS system
-    name: IoT Integrator
+  - name: Bearer Authorization
+    description: 'Obtain Bearer Token'
+  - name: API health checks
+    description: 'Liveness, Readiness and Startup Probes 🔧 **Internal Use Only**'
+  - name: IoT Integrator
+    description: 'Integrate Devices with GIS system (**BOX2M**)'
+
 paths:
+  /oauth/token:
+    post:
+      summary: Obtain an access token from Auth0 --- [⛔ DO NOT USE]
+      description: Request an access token by providing the required authentication information (**from Auth0**)
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  description: The grant type for the token request.
+                  example: client_credentials
+                client_id:
+                  type: string
+                  description: The client ID for the application.
+                  example: YOUR_CLIENT_ID
+                client_secret:
+                  type: string
+                  description: The client secret for the application.
+                  example: YOUR_CLIENT_SECRET
+                audience:
+                  type: string
+                  description: The target audience for the access token.
+                  example: https://dev-piazdvgvgrwwhgn5.us.auth0.com/api/v2/
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+                - audience
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  scope:
+                    type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  error_description:
+                    type: string
+      tags:
+        - Bearer Authorization
+  "/auth/realms/synergetics/protocol/openid-connect/token":
+    post:
+      summary: Obtain an access token from Keycloak
+      description: Request an access token by providing the required authentication information.(**from Keycloak**)
+      requestBody:
+        required: true
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              type: object
+              properties:
+                grant_type:
+                  type: string
+                  description: The grant type for the token request.
+                  example: client_credentials
+                client_id:
+                  type: string
+                  description: The client ID for the application.
+                  example: YOUR_CLIENT_ID
+                client_secret:
+                  type: string
+                  description: The client secret for the application.
+                  example: YOUR_CLIENT_SECRET
+                audience:
+                  type: string
+                  description: The target audience for the access token.
+                  example: https://dev-piazdvgvgrwwhgn5.us.auth0.com/api/v2/
+              required:
+                - grant_type
+                - client_id
+                - client_secret
+                - audience
+      responses:
+        200:
+          description: Successful response
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  access_token:
+                    type: string
+                  refresh_token:
+                    type: string
+                  token_type:
+                    type: string
+                  expires_in:
+                    type: integer
+                  scope:
+                    type: string
+        400:
+          description: Bad Request
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  error:
+                    type: string
+                  error_description:
+                    type: string
+      tags:
+        - Bearer Authorization
   "/v1/sensors/healthz/live":
     get:
       description: 'The liveness endpoint returns the liveness of a microservice. If the check does not return the 
       expected response, it means that the process is unhealthy or dead and should be replaced as soon as possible.'
+      operationId: getLivenessStatus
       responses:
         '200':
-          description: OK
-        '500':
-          description: Internal Server Error
+          description: The service is running
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatusOk'
+        '503':
+          description: The service is not running yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatusError'
       tags:
         - API health checks
   "/v1/sensors/healthz/ready":
@@ -31,17 +169,27 @@ paths:
       description: 'The readiness endpoint returns the readiness state to accept incoming requests from the gateway 
       or the upstream proxy. Readiness signals that the app is running normally but isn’t ready to receive requests 
       just yet. Maybe the database connection is not yet ready, or a big configuration file is being loaded.'
+      operationId: getReadinessStatus
       responses:
         '200':
-          description: OK
-        '500':
-          description: Internal Server Error
+          description: The service is ready to accept requests
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatusOk'
+        '503':
+          description: The service is not ready yet
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/HealthStatusError'
       tags:
         - API health checks
 
   "/v1/sensors/{clientId}/devices":
     get:
       description: Get a list of available devices for a specific client ID
+      summary: Get devices
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
       responses:
@@ -69,13 +217,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/serverErrorResponse"
           description: Internal Server Error
-      #security:
-      #summary:
+      security:
+        - BearerAuth:
+            - read:messages
       tags:
         - IoT Integrator
   "/v1/sensors/{clientId}/devices/{deviceId}":
     get:
       description: Get device information for a specific device ID
+      summary: Get device information
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
         - $ref: "#/components/parameters/deviceIdParam"
@@ -104,13 +254,15 @@ paths:
               schema:
                 $ref: "#/components/schemas/serverErrorResponse"
           description: Internal Server Error
-      #security:
-      #summary:
+      security:
+        - BearerAuth:
+            - read:messages
       tags:
         - IoT Integrator
   "/v1/sensors/{clientId}/devices/{deviceId}/data":
     get:
       description: Get device data for specific device id
+      summary: Get sample data
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
         - $ref: "#/components/parameters/deviceIdParam"
@@ -141,8 +293,9 @@ paths:
               schema:
                 $ref: "#/components/schemas/serverErrorResponse"
           description: Internal Server Error
-      #security:
-      #summary:
+      security:
+        - BearerAuth:
+            - read:messages
       tags:
         - IoT Integrator
 
@@ -397,6 +550,29 @@ components:
       title: Conflict
       type: object
 
+    HealthStatusOk:
+      type: object
+      properties:
+        status:
+          type: string
+          description: The current status of the service, either 'OK' or 'ERROR'.
+          example: OK
+        timestamp:
+          type: string
+          format: date-time
+          description: The timestamp when the health check was performed.
+    HealthStatusError:
+      type: object
+      properties:
+        status:
+          type: string
+          description: The current status of the service, either 'OK' or 'ERROR'.
+          example: ERROR
+        timestamp:
+          type: string
+          format: date-time
+          description: The timestamp when the health check was performed.
+
     getDeviceInformationForAll:
       additionalProperties: false
       description: A list with all devices (for a particular clientId)
@@ -472,7 +648,7 @@ components:
           example: '2022-03-07T08:51:29.015Z'
     coordinatesObj:
       items:
-        description: Coordinates of the specific position, in the following format [long, lat]
+        description: Coordinates of the specific position, in the following format [lat,long]
         type: number
       type: array
       maxItems: 2
@@ -500,3 +676,9 @@ components:
         - '%'
         - PPM
       example: "PPM"
+
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
