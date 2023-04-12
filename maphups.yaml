@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  version: 0.0.2
+  version: 0.0.3
   title: MapsHub Open API Specification (DRAFT)
   description: MapsHub Open API Specification (Work in progress)
   contact:
@@ -16,7 +16,7 @@ tags:
     description: 'Obtain Bearer Token'
   - name: API health checks
     description: 'Liveness, Readiness and Startup Probes 🔧 **Internal Use Only**'
-  - name: IoT Integrator
+  - name: IoT Gateway
     description: 'Integrate Devices with GIS system (**BOX2M**)'
 
 paths:
@@ -144,6 +144,7 @@ paths:
                     type: string
       tags:
         - Bearer Authorization
+
   "/v1/sensors/healthz/live":
     get:
       description: 'The liveness endpoint returns the liveness of a microservice. If the check does not return the 
@@ -155,13 +156,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusOk'
+                $ref: '#/components/schemas/HealthStatusOkResponse'
         '503':
           description: The service is not running yet
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusError'
+                $ref: '#/components/schemas/HealthStatusErrorResponse'
       tags:
         - API health checks
   "/v1/sensors/healthz/ready":
@@ -176,13 +177,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusOk'
+                $ref: '#/components/schemas/HealthStatusOkResponse'
         '503':
           description: The service is not ready yet
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusError'
+                $ref: '#/components/schemas/HealthStatusErrorResponse'
       tags:
         - API health checks
 
@@ -197,7 +198,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/getDeviceInformationForAll"
+                "$ref": "#/components/schemas/getDeviceInformationForAllResponse"
           description: OK
         '401':
           content:
@@ -221,7 +222,78 @@ paths:
         - BearerAuth:
             - read:messages
       tags:
-        - IoT Integrator
+        - IoT Gateway
+    post:
+      description: Add new device
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+      requestBody:
+        description: Post new device definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/postDeviceInfoBody"
+      responses:
+        '201':
+          description: Created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/forbiddenResponse"
+        '404':
+          description: Not Found Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notFoundResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/serverErrorResponse"
+      security:
+        - BearerAuth:
+            - write:messages
+      tags:
+        - IoT Gateway
+    delete:
+      description: Delete a specific device
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+      responses:
+        '204':
+          description: No Content
+        '403':
+          description: Forbidden
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/forbiddenResponse"
+        '404':
+          description: Not Found Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notFoundResponse"
+        '500':
+          description: Internal Server Error
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/serverErrorResponse"
+      security:
+        - BearerAuth:
+            - write:messages
+      tags:
+        - IoT Gateway
   "/v1/sensors/{clientId}/devices/{deviceId}":
     get:
       description: Get device information for a specific device ID
@@ -234,7 +306,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/getDeviceInformation"
+                "$ref": "#/components/schemas/getDeviceInformationResponse"
           description: OK
         '401':
           content:
@@ -258,7 +330,50 @@ paths:
         - BearerAuth:
             - read:messages
       tags:
-        - IoT Integrator
+        - IoT Gateway
+    patch:
+      description: Update device information (configuration)
+      summary: Update configuration parameters
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+        - $ref: "#/components/parameters/deviceIdParam"
+      requestBody:
+        description: Update device definition
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/patchDeviceInfoBody"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        '403':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/forbiddenResponse"
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notFoundResponse"
+          description: Not Found Error
+        '500':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/serverErrorResponse"
+          description: Internal Server Error
+      security:
+        - BearerAuth:
+            - write:messages
+      tags:
+        - IoT Gateway
   "/v1/sensors/{clientId}/devices/{deviceId}/data":
     get:
       description: Get device data for specific device id
@@ -273,7 +388,7 @@ paths:
           content:
             application/json:
               schema:
-                "$ref": "#/components/schemas/getDeviceData"
+                "$ref": "#/components/schemas/getDeviceDataResponse"
           description: OK
         '401':
           content:
@@ -297,7 +412,50 @@ paths:
         - BearerAuth:
             - read:messages
       tags:
-        - IoT Integrator
+        - IoT Gateway
+    patch:
+      description: Update device data (new sensor sample)
+      summary: Push new sensor data sample
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+        - $ref: "#/components/parameters/deviceIdParam"
+      requestBody:
+        description: Update sensor data
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/patchDeviceDataBody"
+      responses:
+        '200':
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+        '403':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/forbiddenResponse"
+          description: Forbidden
+        '404':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/notFoundResponse"
+          description: Not Found Error
+        '500':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/serverErrorResponse"
+          description: Internal Server Error
+      security:
+        - BearerAuth:
+            - write:messages
+      tags:
+        - IoT Gateway
 
 components:
   parameters:
@@ -420,6 +578,20 @@ components:
       description: Conflict
 
   schemas:
+    SuccessResponse:
+      description: An API success response.
+      properties:
+        statusCode:
+          description: HTTP Response Code
+          example: 200
+          type: integer
+        statusText:
+          description: HTTP Status Text
+          enum:
+            - OK
+          type: string
+      title: Success
+      type: object
     badRequestResponse:
       description: An API error response in case of an HTTP Bad Request.
       properties:
@@ -549,8 +721,7 @@ components:
           type: array
       title: Conflict
       type: object
-
-    HealthStatusOk:
+    HealthStatusOkResponse:
       type: object
       properties:
         status:
@@ -561,7 +732,7 @@ components:
           type: string
           format: date-time
           description: The timestamp when the health check was performed.
-    HealthStatusError:
+    HealthStatusErrorResponse:
       type: object
       properties:
         status:
@@ -573,21 +744,41 @@ components:
           format: date-time
           description: The timestamp when the health check was performed.
 
-    getDeviceInformationForAll:
+    getDeviceInformationForAllResponse:
       additionalProperties: false
       description: A list with all devices (for a particular clientId)
       items:
         $ref: "#/components/schemas/deviceListObj"
       type: array
-    getDeviceInformation:
+    getDeviceInformationResponse:
       allOf:
         - $ref: "#/components/schemas/deviceInfoObj"
-    getDeviceData:
+    getDeviceDataResponse:
       items:
         allOf:
-          - $ref: "#/components/schemas/deviceInfoObj"
+          #- $ref: "#/components/schemas/deviceInfoObj"
           - $ref: "#/components/schemas/deviceDataObj"
       type: array
+
+    postDeviceInfoBody:
+      additionalProperties: false
+      description: Insert new device definition
+      allOf:
+        - $ref: "#/components/schemas/deviceInfoObj"
+    patchDeviceInfoBody:
+      additionalProperties: false
+      description: Update device definition
+      allOf:
+        - $ref: "#/components/schemas/deviceInfoObj"
+    patchDeviceDataBody:
+      additionalProperties: false
+      description: Push new device data sample
+      allOf:
+        - $ref: "#/components/schemas/deviceDataObj"
+      example:
+        value: 100
+        unit: PPM
+        sampleTime: '2022-03-07T08:51:29.015Z'
 
     deviceListObj:
       properties:
