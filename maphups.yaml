@@ -8,9 +8,7 @@ info:
     name: Synergetics Corporation SA
     url: https://www.synergetics.ro/
 servers:
-  - url: 'https'
-  - url: https://dev-piazdvgvgrwwhgn5.us.auth0.com
-  - url: https://sso.infra.virtomat.io
+  - url: 'http:127.0.0.1:5000'
 tags:
   - name: Bearer Authorization
     description: 'Obtain Bearer Token'
@@ -20,67 +18,6 @@ tags:
     description: 'Integrate Devices with GIS system (**BOX2M**)'
 
 paths:
-  /oauth/token:
-    post:
-      summary: Obtain an access token from Auth0 --- [⛔ DO NOT USE]
-      description: Request an access token by providing the required authentication information (**from Auth0**)
-      requestBody:
-        required: true
-        content:
-          application/x-www-form-urlencoded:
-            schema:
-              type: object
-              properties:
-                grant_type:
-                  type: string
-                  description: The grant type for the token request.
-                  example: client_credentials
-                client_id:
-                  type: string
-                  description: The client ID for the application.
-                  example: YOUR_CLIENT_ID
-                client_secret:
-                  type: string
-                  description: The client secret for the application.
-                  example: YOUR_CLIENT_SECRET
-                audience:
-                  type: string
-                  description: The target audience for the access token.
-                  example: https://dev-piazdvgvgrwwhgn5.us.auth0.com/api/v2/
-              required:
-                - grant_type
-                - client_id
-                - client_secret
-                - audience
-      responses:
-        200:
-          description: Successful response
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  access_token:
-                    type: string
-                  token_type:
-                    type: string
-                  expires_in:
-                    type: integer
-                  scope:
-                    type: string
-        400:
-          description: Bad Request
-          content:
-            application/json:
-              schema:
-                type: object
-                properties:
-                  error:
-                    type: string
-                  error_description:
-                    type: string
-      tags:
-        - Bearer Authorization
   "/auth/realms/synergetics/protocol/openid-connect/token":
     post:
       summary: Obtain an access token from Keycloak
@@ -156,13 +93,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusOkResponse'
+                $ref: '#/components/schemas/HealthStatusOkSchema'
         '503':
           description: The service is not running yet
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusErrorResponse'
+                $ref: '#/components/schemas/HealthStatusErrorSchema'
       tags:
         - API health checks
   "/v1/sensors/healthz/ready":
@@ -177,13 +114,13 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusOkResponse'
+                $ref: '#/components/schemas/HealthStatusOkSchema'
         '503':
           description: The service is not ready yet
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/HealthStatusErrorResponse'
+                $ref: '#/components/schemas/HealthStatusErrorSchema'
       tags:
         - API health checks
 
@@ -201,26 +138,14 @@ paths:
                 "$ref": "#/components/schemas/getDeviceInformationForAllResponse"
           description: OK
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/unauthorizedRequestResponse"
-          description: Unauthorized
+          $ref: "#/components/responses/UnauthorizedError"
         '403':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/forbiddenResponse"
-          description: Forbidden
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '500':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/serverErrorResponse"
-          description: Internal Server Error
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - read:messages
+            - sensors:view
       tags:
         - IoT Gateway
     post:
@@ -241,28 +166,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/SuccessResponseSchema"
         '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/forbiddenResponse"
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '404':
-          description: Not Found Error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/notFoundResponse"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/serverErrorResponse"
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - write:messages
+            - sensors:create
       tags:
         - IoT Gateway
     delete:
@@ -274,26 +187,14 @@ paths:
         '204':
           description: No Content
         '403':
-          description: Forbidden
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/forbiddenResponse"
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '404':
-          description: Not Found Error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/notFoundResponse"
+          $ref: "#/components/responses/NotFoundErrorResponse"
         '500':
-          description: Internal Server Error
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/serverErrorResponse"
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - write:messages
+            - sensors:delete
       tags:
         - IoT Gateway
   "/v1/sensors/{clientId}/devices/{deviceId}":
@@ -311,26 +212,14 @@ paths:
                 "$ref": "#/components/schemas/getDeviceInformationResponse"
           description: OK
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/unauthorizedRequestResponse"
-          description: Unauthorized
+          $ref: "#/components/responses/UnauthorizedError"
         '403':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/forbiddenResponse"
-          description: Forbidden
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '500':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/serverErrorResponse"
-          description: Internal Server Error
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - read:messages
+            - sensors:view
       tags:
         - IoT Gateway
     patch:
@@ -352,33 +241,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/SuccessResponseSchema"
         '403':
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/forbiddenResponse"
-          description: Forbidden
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '404':
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/notFoundResponse"
-          description: Not Found Error
+          $ref: "#/components/responses/NotFoundErrorResponse"
         '500':
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/serverErrorResponse"
-          description: Internal Server Error
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - write:messages
+            - sensors:update
       tags:
         - IoT Gateway
   "/v1/sensors/{clientId}/devices/{deviceId}/data":
     get:
-      description: Get device data for specific device id
+      description: Get device data feed for specific device id
       summary: Get sample data
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
@@ -393,30 +270,18 @@ paths:
                 "$ref": "#/components/schemas/getDeviceDataResponse"
           description: OK
         '401':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/unauthorizedRequestResponse"
-          description: Unauthorized
+          $ref: "#/components/responses/UnauthorizedError"
         '403':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/forbiddenResponse"
-          description: Forbidden
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '500':
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/serverErrorResponse"
-          description: Internal Server Error
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - read:messages
+            - sensors:view
       tags:
         - IoT Gateway
     patch:
-      description: Update device data (new sensor sample)
+      description: Update device data feed (new sensor sample)
       summary: Push new sensor data sample
       parameters:
         - $ref: "#/components/parameters/clientIdParam"
@@ -434,28 +299,16 @@ paths:
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/SuccessResponse"
+                $ref: "#/components/schemas/SuccessResponseSchema"
         '403':
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/forbiddenResponse"
-          description: Forbidden
+          $ref: "#/components/responses/ForbiddenErrorResponse"
         '404':
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/notFoundResponse"
-          description: Not Found Error
+          $ref: "#/components/responses/NotFoundErrorResponse"
         '500':
-          content:
-            application/json:
-              schema:
-                "$ref": "#/components/schemas/serverErrorResponse"
-          description: Internal Server Error
+          $ref: "#/components/responses/InternalErrorResponse"
       security:
         - BearerAuth:
-            - write:messages
+            - sensors:refresh
       tags:
         - IoT Gateway
 
@@ -469,7 +322,7 @@ components:
       name: clientId
       required: true
       schema:
-        example: 8da1c543-613a-4b36-9c19-6289b3965177
+        example: box2m
         type: string
       style: simple
     deviceIdParam:
@@ -540,47 +393,47 @@ components:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/badRequestResponse"
+            "$ref": "#/components/schemas/badRequestResponseSchema"
       description: Bad Request
-    NotFoundError:
+    NotFoundErrorResponse:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/notFoundResponse"
+            "$ref": "#/components/schemas/notFoundResponseSchema"
       description: Not Found Error
-    InternalServerError:
+    InternalErrorResponse:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/serverErrorResponse"
+            "$ref": "#/components/schemas/internalErrorResponseSchema"
       description: Internal Server Error
-    ForbiddenError:
+    ForbiddenErrorResponse:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/forbiddenResponse"
+            "$ref": "#/components/schemas/forbiddenResponseSchema"
       description: Forbidden
     UnauthorizedError:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/unauthorizedRequestResponse"
+            "$ref": "#/components/schemas/unauthorizedRequestResponseSchema"
       description: Unauthorized
     UnprocessableEntityError:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/unprocessableEntityResponse"
+            "$ref": "#/components/schemas/unprocessableEntityResponseSchema"
       description: Unprocessable Entity
     ConflictError:
       content:
         application/json:
           schema:
-            "$ref": "#/components/schemas/conflictResponse"
+            "$ref": "#/components/schemas/conflictResponseSchema"
       description: Conflict
 
   schemas:
-    SuccessResponse:
+    SuccessResponseSchema:
       description: An API success response.
       properties:
         statusCode:
@@ -594,7 +447,7 @@ components:
           type: string
       title: Success
       type: object
-    badRequestResponse:
+    badRequestResponseSchema:
       description: An API error response in case of an HTTP Bad Request.
       properties:
         statusCode:
@@ -613,7 +466,7 @@ components:
           type: array
       title: Bad Request
       type: object
-    notFoundResponse:
+    notFoundResponseSchema:
       description: An API error response when a resource is Not Found.
       properties:
         statusCode:
@@ -632,7 +485,7 @@ components:
           type: array
       title: Not Found
       type: object
-    serverErrorResponse:
+    internalErrorResponseSchema:
       description: An API error response in case of a Server Side Error.
       properties:
         statusText:
@@ -647,7 +500,7 @@ components:
           type: array
       title: Server Error
       type: object
-    forbiddenResponse:
+    forbiddenResponseSchema:
       description: An API error response in case of an HTTP Forbidden Request.
       properties:
         statusCode:
@@ -666,7 +519,7 @@ components:
           type: array
       title: Forbidden Request
       type: object
-    unauthorizedRequestResponse:
+    unauthorizedRequestResponseSchema:
       description: An API error response in case of an HTTP Unauthorized Request.
       properties:
         statusCode:
@@ -685,7 +538,7 @@ components:
           type: array
       title: Unauthorized Request
       type: object
-    unprocessableEntityResponse:
+    unprocessableEntityResponseSchema:
       description: An API error response when the request is valid but cannot be processed.
       properties:
         statusCode:
@@ -704,7 +557,7 @@ components:
           type: array
       title: Unprocessable Entity
       type: object
-    conflictResponse:
+    conflictResponseSchema:
       description: An API error response when a conflict is found.
       properties:
         statusCode:
@@ -723,7 +576,7 @@ components:
           type: array
       title: Conflict
       type: object
-    HealthStatusOkResponse:
+    HealthStatusOkSchema:
       type: object
       properties:
         status:
@@ -734,7 +587,7 @@ components:
           type: string
           format: date-time
           description: The timestamp when the health check was performed.
-    HealthStatusErrorResponse:
+    HealthStatusErrorSchema:
       type: object
       properties:
         status:
@@ -788,7 +641,7 @@ components:
           description: Unique client id that has ownership over this device (could be project id)
             Each integration with third party system should have one such unique client id
           type: string
-          example: 8da1c543-613a-4b36-9c19-6289b3965177
+          example: box2m
         deviceId:
           description: Unique device id used to uniquely identify the device
           type: string
@@ -802,7 +655,7 @@ components:
         clientId:
           description: Unique client id that has ownership over this device (could be project id)
             Each integration with third party system should have one such unique client id
-          example: 8da1c543-613a-4b36-9c19-6289b3965177
+          example: box2m
           type: string
         deviceId:
           description: Unique device id used to uniquely identify the device
@@ -872,6 +725,14 @@ components:
 
   securitySchemes:
     BearerAuth:
-      type: http
-      scheme: bearer
-      bearerFormat: JWT
+      type: oauth2
+      description: This API uses OAuth 2 with the clientCredentials grant flow. [More info](https://api.example.com/docs/auth)
+      flows:
+        clientCredentials:
+          tokenUrl: https://sso.infra.virtomat.io/realms/synergetics/protocol/openid-connect/token
+          scopes:
+            sensors:create: Create new sensor definition
+            sensors:view: View sensor definition
+            sensors:update: Update sensor definition
+            sensors:delete: Delete sensor definition records
+            sensors:refresh: Update sensor data feed
