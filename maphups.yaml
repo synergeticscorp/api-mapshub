@@ -44,7 +44,7 @@ paths:
                 audience:
                   type: string
                   description: The target audience for the access token.
-                  example: https://dev-piazdvgvgrwwhgn5.us.auth0.com/api/v2/
+                  example: box2m
               required:
                 - grant_type
                 - client_id
@@ -315,8 +315,7 @@ paths:
 components:
   parameters:
     clientIdParam:
-      description: The unique client ID which identifies the third party entity that owns these resources. Can be
-        obtained from the Get All Devices API query.
+      description: 'The unique client ID which identifies the third party entity that owns these resources.'
       explode: false
       in: path
       name: clientId
@@ -326,8 +325,7 @@ components:
         type: string
       style: simple
     deviceIdParam:
-      description: The unique device ID which identifies each sensor. Can be obtained
-        from the Get All Devices API query.
+      description: 'The unique device ID which identifies each sensor. Can be obtained from the Get All Devices API query.'
       explode: false
       in: path
       name: deviceId
@@ -337,7 +335,7 @@ components:
         type: string
       style: simple
     startDateTime:
-      description: Timestamp from where onwards the historic data messages should be queried.
+      description: 'Timestamp from where onwards the historic data messages should be queried.'
       explode: true
       in: query
       name: startDateTime
@@ -347,7 +345,7 @@ components:
         type: string
       style: form
     endDateTime:
-      description: Timestamp until when the historic data messages should be queried.
+      description: 'Timestamp until when the historic data messages should be queried.'
       explode: true
       in: query
       name: endDateTime
