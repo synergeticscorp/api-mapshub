@@ -1,6 +1,6 @@
 openapi: 3.0.1
 info:
-  version: 0.0.3
+  version: 0.0.4
   title: MapsHub Open API Specification (DRAFT)
   description: MapsHub Open API Specification (Work in progress)
   contact:
@@ -59,14 +59,19 @@ paths:
                 type: object
                 properties:
                   access_token:
-                    type: string
-                  refresh_token:
-                    type: string
-                  token_type:
+                    example: "eyJhbGciOiJSUzI1NiIsInR5cCIgOiAiSldUIi..."
                     type: string
                   expires_in:
+                    example: 36000
+                    type: integer
+                  refresh_expires_in:
+                    example: 0
+                    type: integer
+                  not-before-policy:
+                    example: 0
                     type: integer
                   scope:
+                    example: sensors:view sensors:create sensors:update sensors:delete sensors:refresh
                     type: string
         400:
           description: Bad Request
@@ -124,6 +129,28 @@ paths:
       tags:
         - API health checks
 
+  "/v1/sensors/devices":
+    get:
+      description: Get a list of available devices for all client IDs. Useful to quicly display all sensors on map.
+      summary: Get all devices
+      responses:
+        '200':
+          content:
+            application/json:
+              schema:
+                "$ref": "#/components/schemas/getDeviceInformationForAllResponse"
+          description: OK
+        '401':
+          $ref: "#/components/responses/UnauthorizedError"
+        '403':
+          $ref: "#/components/responses/ForbiddenErrorResponse"
+        '500':
+          $ref: "#/components/responses/InternalErrorResponse"
+      security:
+        - BearerAuth:
+            - sensors:view
+      tags:
+        - IoT Gateway
   "/v1/sensors/{clientId}/devices":
     get:
       description: Get a list of available devices for a specific client ID
@@ -176,25 +203,6 @@ paths:
       security:
         - BearerAuth:
             - sensors:create
-      tags:
-        - IoT Gateway
-    delete:
-      description: Delete a specific device
-      summary: Remove device
-      parameters:
-        - $ref: "#/components/parameters/clientIdParam"
-      responses:
-        '204':
-          description: No Content
-        '403':
-          $ref: "#/components/responses/ForbiddenErrorResponse"
-        '404':
-          $ref: "#/components/responses/NotFoundErrorResponse"
-        '500':
-          $ref: "#/components/responses/InternalErrorResponse"
-      security:
-        - BearerAuth:
-            - sensors:delete
       tags:
         - IoT Gateway
   "/v1/sensors/{clientId}/devices/{deviceId}":
@@ -251,6 +259,26 @@ paths:
       security:
         - BearerAuth:
             - sensors:update
+      tags:
+        - IoT Gateway
+    delete:
+      description: Delete a specific device
+      summary: Remove device
+      parameters:
+        - $ref: "#/components/parameters/clientIdParam"
+        - $ref: "#/components/parameters/deviceIdParam"
+      responses:
+        '204':
+          description: No Content
+        '403':
+          $ref: "#/components/responses/ForbiddenErrorResponse"
+        '404':
+          $ref: "#/components/responses/NotFoundErrorResponse"
+        '500':
+          $ref: "#/components/responses/InternalErrorResponse"
+      security:
+        - BearerAuth:
+            - sensors:delete
       tags:
         - IoT Gateway
   "/v1/sensors/{clientId}/devices/{deviceId}/data":
@@ -404,19 +432,19 @@ components:
         application/json:
           schema:
             "$ref": "#/components/schemas/internalErrorResponseSchema"
-      description: Internal Server Error
+      description: INTERNAL SERVER ERROR
     ForbiddenErrorResponse:
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/forbiddenResponseSchema"
-      description: Forbidden
+      description: FORBIDDEN
     UnauthorizedError:
       content:
         application/json:
           schema:
             "$ref": "#/components/schemas/unauthorizedRequestResponseSchema"
-      description: Unauthorized
+      description: UNAUTHORIZED
     UnprocessableEntityError:
       content:
         application/json:
@@ -486,54 +514,43 @@ components:
     internalErrorResponseSchema:
       description: An API error response in case of a Server Side Error.
       properties:
-        statusText:
+        error:
           description: HTTP Status Text
           enum:
-          - Unknown Error
+          - unknown_error
           type: string
-        errors:
-          description: List of errors encountered while calling the API.
-          items:
-            type: object
-          type: array
+        error_description:
+          description: Detailed error description
+          example: "Service is not responding"
+          type: string
       title: Server Error
       type: object
     forbiddenResponseSchema:
       description: An API error response in case of an HTTP Forbidden Request.
       properties:
-        statusCode:
-          description: HTTP Response Code
-          example: 403
-          type: integer
-        statusText:
-          description: HTTP Status Text
+        error:
+          description: Descriptive error code
           enum:
-          - Forbidden
+          - insufficient_scope
           type: string
-        errors:
-          description: Detailed error information.
-          items:
-            type: object
-          type: array
+        error_description:
+          description: Detailed error description
+          example: "The request requires higher privileges than provided by the access token."
+          type: string
       title: Forbidden Request
       type: object
     unauthorizedRequestResponseSchema:
       description: An API error response in case of an HTTP Unauthorized Request.
       properties:
-        statusCode:
-          description: HTTP Response Code
-          example: 401
-          type: integer
-        statusText:
-          description: HTTP Status Text
+        error:
+          description: Descriptive error code
           enum:
-          - Unauthorized
+          - invalid_token
           type: string
-        errors:
-          description: Detailed error information.
-          items:
-            type: object
-          type: array
+        error_description:
+          description: Detailed error description
+          example: "The access token provided is expired, revoked, malformed, or invalid for other reasons."
+          type: string
       title: Unauthorized Request
       type: object
     unprocessableEntityResponseSchema:
@@ -609,7 +626,6 @@ components:
     getDeviceDataResponse:
       items:
         allOf:
-          #- $ref: "#/components/schemas/deviceInfoObj"
           - $ref: "#/components/schemas/deviceDataObj"
       type: array
 
